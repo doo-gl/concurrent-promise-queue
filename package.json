@@ -1,12 +1,13 @@
 {
   "name": "concurrent-promise-queue",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Allows promises to be queued up and executed at a maximum rate defined by time or max concurrency",
+  "keywords": ["queue", "concurrency", "concurrent", "parralel", "job", "task", "async", "asynchronous", "promise"],
+  "repository": "github:doo-gl/concurrent-promise-queue",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "prepublish": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Doogal Simpson",
   "license": "MIT",
