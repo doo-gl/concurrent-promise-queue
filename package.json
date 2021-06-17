@@ -7,7 +7,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "prepublish": "tsc",
+    "prepublish": "tsc"
   },
   "author": "Doogal Simpson",
   "license": "MIT",
