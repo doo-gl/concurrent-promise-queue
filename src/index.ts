@@ -42,7 +42,7 @@ export class ConcurrentPromiseQueue<T> {
   private promisesBeingExecuted:{[id:string]: QueuedPromise<T>};
   private promiseExecutedCallbacks:{[id:string]:PromiseExecutionListener<T>};
   private promiseCompletedTimesLog:Date[];
-  private reattemptTimeoutId:number|null;
+  private reattemptTimeoutId:NodeJS.Timeout|null;
 
   constructor(options:QueueOptions) {
     this.maxNumberOfConcurrentPromises = options.maxNumberOfConcurrentPromises || 1000;
@@ -106,7 +106,7 @@ export class ConcurrentPromiseQueue<T> {
     const numberOfPromisesFinishedInLastUnitTime:number = promisesFinishedInLastUnitTime.length;
     const numberOfPromisesBeingExecuted:number = Object.keys(this.promisesBeingExecuted).length;
     const numberOfPromisesLeftInConcurrencyLimit:number = this.maxNumberOfConcurrentPromises - numberOfPromisesBeingExecuted;
-    const numberOfPromisesLeftInRateLimit:number = this.maxThroughputPerUnitTime - numberOfPromisesFinishedInLastUnitTime;
+    const numberOfPromisesLeftInRateLimit:number = this.maxThroughputPerUnitTime - numberOfPromisesFinishedInLastUnitTime - numberOfPromisesBeingExecuted;
     const numberOfPromisesToStart:number = Math.min(numberOfPromisesLeftInConcurrencyLimit, numberOfPromisesLeftInRateLimit);
     if (numberOfPromisesToStart <= 0) {
       // if we are not starting any more promises, we should check to see if we are going to start more later
