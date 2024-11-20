@@ -110,7 +110,7 @@ describe("concurrent promise queue", () => {
 
   it("Should execute Promises at max 1 per 500ms", async () => {
 
-    const queue = new ConcurrentPromiseQueue<number>({
+    const queue = new ConcurrentPromiseQueue({
       unitOfTimeMillis: 500,
       maxThroughputPerUnitTime: 1,
     })
@@ -153,7 +153,7 @@ describe("concurrent promise queue", () => {
 
   it("Should execute Promises at max 2 per 1000ms", async () => {
 
-    const queue = new ConcurrentPromiseQueue<number>({
+    const queue = new ConcurrentPromiseQueue({
       unitOfTimeMillis: 1000,
       maxThroughputPerUnitTime: 2,
     })
@@ -193,6 +193,97 @@ describe("concurrent promise queue", () => {
     expect(milli4 - milli1).toBeGreaterThan(1000)
     expect(milli5 - milli3).toBeGreaterThan(1000)
     expect(milli6 - milli3).toBeGreaterThan(1000)
+  })
+
+   it("Should resolve promises in resolution order by default", async () => {
+
+     const queue = new ConcurrentPromiseQueue({
+       maxNumberOfConcurrentPromises: 2,
+     })
+     const ticketGenerator = new TicketGenerator()
+
+      const generatedTickets = new Array<Ticket>()
+
+     const generatePromise = (sleepTimeMillis:number) => {
+       const ticket = ticketGenerator.generate();
+       return async () => {
+         await sleep(sleepTimeMillis)
+         return ticket
+       }
+     }
+
+     await Promise.all([
+       queue.addPromise(generatePromise(1000)).then(ticket => generatedTickets.push(ticket)),
+       queue.addPromise(generatePromise(100)).then(ticket => generatedTickets.push(ticket)),
+       queue.addPromise(generatePromise(100)).then(ticket => generatedTickets.push(ticket)),
+       queue.addPromise(generatePromise(100)).then(ticket => generatedTickets.push(ticket)),
+       queue.addPromise(generatePromise(100)).then(ticket => generatedTickets.push(ticket)),
+     ])
+
+     expect(generatedTickets.map(ti => ti.ticketNumber)).toEqual([1,2,3,4,0])
+
+   });
+
+  it("Should resolve in queue order if resolveInOrder is set", async () => {
+
+    const queue = new ConcurrentPromiseQueue({
+      maxNumberOfConcurrentPromises: 2,
+      resolveInOrder: true,
+    })
+    const ticketGenerator = new TicketGenerator()
+
+    const generatedTickets = new Array<Ticket>()
+
+    const generatePromise = (sleepTimeMillis:number) => {
+      const ticket = ticketGenerator.generate();
+      return async () => {
+        await sleep(sleepTimeMillis)
+        return ticket
+      }
+    }
+
+    await Promise.all([
+      queue.addPromise(generatePromise(1000)).then(ticket => generatedTickets.push(ticket)),
+      queue.addPromise(generatePromise(100)).then(ticket => generatedTickets.push(ticket)),
+      queue.addPromise(generatePromise(100)).then(ticket => generatedTickets.push(ticket)),
+      queue.addPromise(generatePromise(1000)).then(ticket => generatedTickets.push(ticket)),
+      queue.addPromise(generatePromise(100)).then(ticket => generatedTickets.push(ticket)),
+      queue.addPromise(generatePromise(100)).then(ticket => generatedTickets.push(ticket)),
+    ])
+
+    expect(generatedTickets.map(ti => ti.ticketNumber)).toEqual([0,1,2,3,4,5])
+
+  })
+
+  it("resolveInOrder should not effect single concurrency execution", async () => {
+
+    const queue = new ConcurrentPromiseQueue({
+      maxNumberOfConcurrentPromises: 1,
+      resolveInOrder: true,
+    })
+    const ticketGenerator = new TicketGenerator()
+
+    const generatedTickets = new Array<Ticket>()
+
+    const generatePromise = (sleepTimeMillis:number) => {
+      const ticket = ticketGenerator.generate();
+      return async () => {
+        await sleep(sleepTimeMillis)
+        return ticket
+      }
+    }
+
+    await Promise.all([
+      queue.addPromise(generatePromise(1000)).then(ticket => generatedTickets.push(ticket)),
+      queue.addPromise(generatePromise(100)).then(ticket => generatedTickets.push(ticket)),
+      queue.addPromise(generatePromise(100)).then(ticket => generatedTickets.push(ticket)),
+      queue.addPromise(generatePromise(1000)).then(ticket => generatedTickets.push(ticket)),
+      queue.addPromise(generatePromise(100)).then(ticket => generatedTickets.push(ticket)),
+      queue.addPromise(generatePromise(100)).then(ticket => generatedTickets.push(ticket)),
+    ])
+
+    expect(generatedTickets.map(ti => ti.ticketNumber)).toEqual([0,1,2,3,4,5])
+
   })
 
 })

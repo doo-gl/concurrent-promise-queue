@@ -115,3 +115,79 @@ The queue will start new promises to maintain the concurrency limit.
 8s - Called /book/6
 ```
 
+### Resolving Promises in order
+
+By default, the promises returned from `queue.addPromise()` will resolve as soon as they can.
+
+The order that promises are added to the queue is not the order that the promises will resolve from the queue.
+The order that promises are added to the queue is the order that promises will be started in.
+
+For example, the default behaviour:
+```ts
+import {ConcurrentPromiseQueue} from "concurrent-promise-queue";
+
+const queue = new ConcurrentPromiseQueue({ maxNumberOfConcurrentPromises: 2 });
+
+queue.addPromise(() => {
+  console.log("Long Sleep Started")
+  sleep(2000)
+  console.log("Long Sleep Finished")
+})
+  .then(() => console.log("Long Sleep Resolved"))
+
+queue.addPromise(() => {
+  console.log("Short Sleep Started")
+  sleep(1000)
+  console.log("Short Sleep Finished")
+})
+  .then(() => console.log("Short Sleep Resolved"))
+```
+
+Will result in:
+```
+0s - Long Sleep Started
+0s - Short Sleep Started
+1s - Short Sleep Finished
+1s - Short Sleep Resolved
+2s - Long Sleep Finished
+2s - Long Sleep Resolved
+```
+
+
+If you need to have promises resolve from the queue in the order that they were added to the queue, 
+you can specify the `resolveInOrder` option
+
+This will still execute the promises in the same way, but will cause them to resolve in the order they were added.
+
+For example, with `resolveInOrder` behaviour:
+```ts
+import {ConcurrentPromiseQueue} from "concurrent-promise-queue";
+
+const queue = new ConcurrentPromiseQueue({ maxNumberOfConcurrentPromises: 2, resolveInOrder: true });
+
+queue.addPromise(() => {
+  console.log("Long Sleep Started")
+  sleep(2000)
+  console.log("Long Sleep Finished")
+})
+  .then(() => console.log("Long Sleep Resolved"))
+
+queue.addPromise(() => {
+  console.log("Short Sleep Started")
+  sleep(1000)
+  console.log("Short Sleep Finished")
+})
+  .then(() => console.log("Short Sleep Resolved"))
+```
+
+Will result in:
+```
+0s - Long Sleep Started
+0s - Short Sleep Started
+1s - Short Sleep Finished
+2s - Long Sleep Finished
+2s - Long Sleep Resolved
+2s - Short Sleep Resolved
+```
+
+The short sleep ran and finished before the long sleep finished, but only resolved, once the long sleep had resolved.
